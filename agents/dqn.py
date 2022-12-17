@@ -13,7 +13,7 @@ import torch.nn.functional as F
 
 import pfrl
 from pfrl import agent
-from pfrl.action_value import ActionValue
+from model import ActionValue
 from pfrl.explorer import Explorer
 from pfrl.replay_buffer import (
     AbstractEpisodicReplayBuffer,
@@ -21,7 +21,7 @@ from pfrl.replay_buffer import (
     batch_experiences,
     batch_recurrent_experiences,
 )
-from pfrl.replay_buffers import PrioritizedReplayBuffer
+from replay_buffer import PrioritizedReplayBuffer
 from pfrl.utils.batch_states import batch_states
 from pfrl.utils.contexts import evaluating
 from pfrl.utils.copy_param import synchronize_parameters

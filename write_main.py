@@ -1,5 +1,6 @@
 
-_MODEL_MAIN = r"""
+def write_main(n_atoms, v_max, v_min, noisy_sigma, path):
+    model_file_string = r"""
 import os
 import sys
 import cv2
@@ -16,15 +17,16 @@ from model_weights import model_string
 
 def make_model():
     # Q_function
-    model = pfrl.q_functions.DistributionalDuelingDQN(n_actions=19, n_atoms=51, v_min=-10, v_max=10, n_input_channels=4)
+    model = pfrl.q_functions.DistributionalDuelingDQN(n_actions=19, n_atoms={}, v_min={}, v_max={}, n_input_channels=4)
 
     # Noisy nets
-    pfrl.nn.to_factorized_noisy(model, sigma_scale=0.5)
+    pfrl.nn.to_factorized_noisy(model, sigma_scale={})
 
     # load weights
-    with open("model.dat", "wb") as f:
+    model_path = os.path.join("{}", "model.dat")
+    with open(model_path, "wb") as f:
         f.write(base64.b64decode(model_string))
-    weights = torch.load("model.dat", map_location=torch.device('cpu'))
+    weights = torch.load(model_path, map_location=torch.device('cpu'))
     model.load_state_dict(weights)
     return model
 
@@ -48,4 +50,5 @@ def agent(obs):
     actions = model(obs)
     action = int(actions.greedy_actions.numpy()[0])  # modified
     return [action]
-"""
+    """.format(n_atoms, v_min, v_max, noisy_sigma, path)
+    return model_file_string

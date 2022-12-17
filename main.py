@@ -21,7 +21,7 @@ from util import seed_everything
 from util import text_csv_converter
 from util import str2bool
 from util import make_video
-from write_main import _MODEL_MAIN
+from write_main import write_main
 from wrapper import make_env
 
 class Trainer(object):
@@ -41,7 +41,7 @@ class Trainer(object):
 
         self.explorer = Greedy()
         self.optimizer = self.set_optimizer()
-        self.rbuf, self.update_interval = self.set_replay()
+        self.rbuf = self.set_replay()
 
         self.agent = self.set_model()
 
@@ -75,25 +75,24 @@ class Trainer(object):
                                           self.args.v_max, obs_n_channels)
         print(q_func)
 
-        to_factorized_noisy(q_func, sigma_scale=0.5)
+        to_factorized_noisy(q_func, sigma_scale=self.args.noisy_sigma)
         return q_func
 
     def set_optimizer(self):
         # Use the same hyper parameters as https://arxiv.org/abs/1710.02298
-        return torch.optim.Adam(self.q_func.parameters(), 6.25e-5, eps=1.5 * 10 ** -4)
+        return torch.optim.Adam(self.q_func.parameters(), self.args.lr, eps=1.5 * 10 ** -4)
 
     def set_replay(self):
-        update_interval = 4
-        betasteps = 5 * 10 ** 7 / update_interval
+        betasteps = 5 * 10 ** 7 / self.args.update_interval
         rbuf = PrioritizedReplayBuffer(
-            10 ** 6,
-            alpha=0.5,
-            beta0=0.4,
+            self.args.buffer_capacity,
+            alpha=self.args.alpha,
+            beta0=self.args.beta0,
             betasteps=betasteps,
-            num_steps=3,
+            num_steps=self.args.multi_step,
             normalize_by_max="memory",
         )
-        return rbuf, update_interval
+        return rbuf
 
     def set_model(self):
         agent = CategoricalDoubleDQN(
@@ -101,12 +100,12 @@ class Trainer(object):
             self.optimizer,
             self.rbuf,
             gpu=self.gpu,
-            gamma=0.99,
+            gamma=self.args.gamma,
             explorer=self.explorer,
-            minibatch_size=32,
-            replay_start_size=2 * 10 ** 4,
+            minibatch_size=self.args.batch_size,
+            replay_start_size=self.args.replay_start_size,
             target_update_interval=self.args.target_update_interval,
-            update_interval=self.update_interval,
+            update_interval=self.args.update_interval,
             batch_accumulator="mean",
             phi=self.phi,
         )
@@ -145,6 +144,7 @@ class Trainer(object):
         file_path_png = os.path.join(self.args.log_path, "scores.png")
         text_csv_converter(file_path_txt)
         scores = pd.read_csv(file_path_csv)
+        self.export_graph(scores)
         df_styled = scores.style.background_gradient()
         dfi.export(df_styled, file_path_png)
 
@@ -152,16 +152,34 @@ class Trainer(object):
         pfrl_path = os.path.join(self.args.log_path, "sub")
         os.makedirs(pfrl_path, exist_ok=True)
         os.chdir(os.getcwd())
+        path_list = []
         model_path = os.path.join(self.args.log_path, f'{self.args.num_steps}_finish/model.pt')
         model_weight_path = os.path.join(self.args.log_path, 'sub', 'model_weights.py')
         process_file_path = os.path.join(self.args.log_path, 'sub', 'main.py')
-        with open(model_path, 'rb') as f:
-            encoded_string = base64.b64encode(f.read())
-        with open(model_weight_path, 'w') as f:
-            f.write(f'model_string={encoded_string}')
-        with open(process_file_path, 'w') as f:
-            f.write(_MODEL_MAIN)
-        make_video(self.args.log_path)
+        path_list.append([model_path, model_weight_path, process_file_path])
+
+        model_path = self.args.player2_path
+        model_path, model_weight_path, process_file_path = ospj(model_path, 'model.pt'), \
+                                                           ospj(model_path, 'model_weights.py'), \
+                                                           ospj(model_path, 'main.py')
+        path_list.append([model_path, model_weight_path, process_file_path])
+
+        process_file_path_list = []
+        for i, path in enumerate(path_list):
+            model_path, model_weight_path, process_file_path = map(str, path)
+            if i == 1:
+                main_code = write_main(51, 10, -10, 0.5, self.args.player2_path)
+            else:
+                main_code = write_main(self.args.n_atoms, self.args.v_max,
+                                       self.args.v_min, self.args.noisy_sigma, self.args.log_path)
+            with open(model_path, 'rb') as f:
+                encoded_string = base64.b64encode(f.read())
+            with open(model_weight_path, 'w') as f:
+                f.write(f'model_string={encoded_string}')
+            with open(process_file_path, 'w') as f:
+                f.write(main_code)
+            process_file_path_list.append(process_file_path)
+        make_video(self.args.log_path, process_file_path_list)
 
 def evaluate(args):
     model_path_list = [args.player1_path, args.player2_path]
@@ -175,7 +193,8 @@ def evaluate(args):
         with open(model_weight_path, 'w') as f:
             f.write(f'model_string={encoded_string}')
         with open(process_file_path, 'w') as f:
-            f.write(_MODEL_MAIN)
+            f.write(write_main(args.n_atoms, args.v_max,
+                               args.v_min, args.noisy_sigma, args.log_path))
         process_file_path_list.append(process_file_path)
     make_video(args.log_path, process_file_path_list)
 
@@ -183,17 +202,36 @@ if __name__ == '__main__':
     args = argparse.ArgumentParser()
     args.add_argument('--log_path', type=str, default='./train_log')
     args.add_argument('--seed', type=int, default=1234)
-    args.add_argument('--n_atoms', type=int, default=51)
-    args.add_argument('--v_max', type=int, default=10)
-    args.add_argument('--v_min', type=int, default=-10)
-    args.add_argument('--target_update_interval', type=int, default=32000)
-    args.add_argument('--num_steps', type=int, default=100000)
     args.add_argument('--pretrained_path', type=str, default=None)
     args.add_argument('--test_only', type=str2bool, default=False)
 
     # for evaluation
     args.add_argument('--player1_path', type=str, default='./train_log/best')
-    args.add_argument('--player2_path', type=str, default='./train_log/100_finish')
+    args.add_argument('--player2_path', type=str, default='./train_log/best')
+
+    # HP Search
+    # Replay Start Size
+    args.add_argument('--replay_start_size', type=int, default=2 * 10 ** 4)
+    # Noisy Net
+    args.add_argument('--noisy_sigma', type=float, default=0.5)
+    # learning rate and optimizer
+    args.add_argument('--lr', type=float, default=6.25e-5)
+    # Prioritized replay buffer
+    args.add_argument('--alpha', type=float, default=0.5)
+    args.add_argument('--beta0', type=float, default=0.4)
+    args.add_argument('--multi_step', type=int, default=3)
+    # Distributional Dueling DQN
+    args.add_argument('--n_atoms', type=int, default=51)
+    args.add_argument('--v_max', type=int, default=10)
+    args.add_argument('--v_min', type=int, default=-10)
+    # Categorical Double DQN
+    args.add_argument('--target_update_interval', type=int, default=32000)
+    args.add_argument('--update_interval', type=int, default=4)
+    args.add_argument('--gamma', type=float, default=0.99)
+    args.add_argument('--batch_size', type=int, default=32)
+    # Etc.
+    args.add_argument('--buffer_capacity', type=int, default=10 ** 5)
+    args.add_argument('--num_steps', type=int, default=100000)
 
     args = args.parse_args()
     os.makedirs(args.log_path, exist_ok=True)
