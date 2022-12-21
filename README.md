@@ -9,10 +9,11 @@ Please run the following command for environments.
 ```shell
 pip install pfrl==0.1.0
 pip install gym==0.22
+pip install dataframe_image
 apt-get update
 apt-get install libboost1.65-all -y
 apt update
-apt install chromium-chromedriver
+apt install chromium-chromedriver -y
 ```
 
 Also run the following command to download the `gfootball` environment.

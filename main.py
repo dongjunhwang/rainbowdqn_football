@@ -184,17 +184,23 @@ class Trainer(object):
 def evaluate(args):
     model_path_list = [args.player1_path, args.player2_path]
     process_file_path_list = []
-    for model_path in model_path_list:
+    for i, model_path in enumerate(model_path_list):
         model_path, model_weight_path, process_file_path = ospj(model_path, 'model.pt'), \
                                                            ospj(model_path, 'model_weights.py'), \
                                                            ospj(model_path, 'main.py')
+        if i == 1:
+            main_code = write_main(51, 10, -10, 0.5, args.player2_path)
+        else:
+            main_code = write_main(args.n_atoms, args.v_max,
+                                   args.v_min, args.noisy_sigma, args.log_path)
+
         with open(model_path, 'rb') as f:
             encoded_string = base64.b64encode(f.read())
         with open(model_weight_path, 'w') as f:
             f.write(f'model_string={encoded_string}')
         with open(process_file_path, 'w') as f:
-            f.write(write_main(args.n_atoms, args.v_max,
-                               args.v_min, args.noisy_sigma, args.log_path))
+            f.write(main_code)
+
         process_file_path_list.append(process_file_path)
     make_video(args.log_path, process_file_path_list)
 
