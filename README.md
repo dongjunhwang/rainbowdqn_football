@@ -1,5 +1,6 @@
 # Rainbow DQN for Google football game
 
+- It is part of a project in Reinforcement Learning (AIE6203-01).
 - Implementation of [RainbowDQN](https://arxiv.org/abs/1710.02298) with reinforcement library `prfl` for [Google Research Football](https://github.com/google-research/football).
 - Most part of our codes originate from [pfrl](https://github.com/pfnet/pfrl) and [Google Research Football](https://github.com/google-research/football).
 
