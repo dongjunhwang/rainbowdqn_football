@@ -242,9 +242,9 @@ if __name__ == '__main__':
     args = args.parse_args()
     os.makedirs(args.log_path, exist_ok=True)
 
-    trainer = Trainer(args)
     if args.test_only:
         evaluate(args)
     else:
+        trainer = Trainer(args)
         trainer.train()
         trainer.save_model_to_submission_file()

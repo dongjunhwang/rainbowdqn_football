@@ -6,6 +6,8 @@ import sys
 import cv2
 import collections
 import numpy as np
+from model import DistributionalDuelingDQN
+from model import to_factorized_noisy
 from gfootball.env import observation_preprocessing
 
 # PFRL
@@ -17,10 +19,10 @@ from model_weights import model_string
 
 def make_model():
     # Q_function
-    model = pfrl.q_functions.DistributionalDuelingDQN(n_actions=19, n_atoms={}, v_min={}, v_max={}, n_input_channels=4)
+    model = DistributionalDuelingDQN(n_actions=19, n_atoms={}, v_min={}, v_max={}, n_input_channels=4)
 
     # Noisy nets
-    pfrl.nn.to_factorized_noisy(model, sigma_scale={})
+    to_factorized_noisy(model, sigma_scale={})
 
     # load weights
     model_path = os.path.join("{}", "model.dat")
