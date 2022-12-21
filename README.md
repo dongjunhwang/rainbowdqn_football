@@ -11,6 +11,10 @@
 
 - Please follow this [LINK](https://www.youtube.com/watch?v=Wz08u-gISgU) if you want to see qualitative results.
 
+## Hyperparameters
+
+Information on all these hyperparameters and performances is reported [HERE](https://docs.google.com/spreadsheets/d/19rK_Cw2WnamJdTDXWr_wK27oPcm3C_IL5m1AfT8d_hM/edit?usp=sharing).
+
 ## Dependencies
 Please run the following command for environments.
 
