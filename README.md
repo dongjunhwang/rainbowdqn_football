@@ -3,6 +3,14 @@
 - Implementation of [RainbowDQN](https://arxiv.org/abs/1710.02298) with reinforcement library `prfl` for [Google Research Football](https://github.com/google-research/football).
 - Most part of our codes originate from [pfrl](https://github.com/pfnet/pfrl) and [Google Research Football](https://github.com/google-research/football).
 
+## Results
+<div align="center">
+  <img width="400" height="225" src="assets/example.gif"/>
+</div>
+<br>
+
+- Please follow this [LINK](https://www.youtube.com/watch?v=Wz08u-gISgU) if you want to see qualitative results.
+
 ## Dependencies
 Please run the following command for environments.
 
@@ -22,5 +30,10 @@ mkdir -p football/third_party/gfootball_engine/lib
 wget https://storage.googleapis.com/gfootball/prebuilt_gameplayfootball_v2.7.so -O football/third_party/gfootball_engine/lib/prebuilt_gameplayfootball.so
 cd football && GFOOTBALL_USE_PREBUILT_SO=1 pip install .
 ```
+
+## Pretrained Model
+
+The pretrained models of ours and default models are exist in [HERE](https://drive.google.com/drive/folders/1t-2DkWumwGBP3NVFPgadJsW3yOnXyIDA?usp=share_link).
+
 
 
